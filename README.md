@@ -3,6 +3,20 @@ Event-Driven Router for node
 
 ##Example Code
 ```javascript
+const http = require('http');
+// test it with restify
+const express = require('express');
+const app = express();
+const edr = require('edr');
+
+app.use(edr());
+
+http
+  .createServer(app)
+  .listen(3030);
+```
+
+```javascript
 const edr = require('edr');
 // create a new resuorce
 const comments = edr.createResource('commments');
@@ -53,6 +67,7 @@ comments
   });
 // common error handler
 edr
+  .errorHandler()
   .on('error', (err, req, res) => {
     res.json({
       error: err

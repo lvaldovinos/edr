@@ -53,7 +53,6 @@ comments
   });
 // common error handler
 edr
-  .errorHandler()
   .on('error', (err, req, res) => {
     res.json({
       error: err

@@ -74,3 +74,49 @@ edr
     });
   });
 ```
+
+<code>
+  POST - /friends
+</code>
+```javascript
+const edr = require('edr');
+const friends = edr.createRestResource('friends');
+friends
+  .on('create', (req, res, move) => {
+    var newFriend = new Friend(req.body);
+    newFriend
+      .save((err) => {
+        if (err) return move(err);
+        res.status(200).json({ message: 'created' });
+      });
+  });
+```
+
+<code>
+  PUT - /friends/123
+</code>
+```javascript
+const edr = require('edr');
+const friends = edr.createRestResource('friends');
+friends
+  .on('friendId', (req, res, move, friendId) => {
+    Friend.findById(friendId, (err, friend) => move(err, friend));
+  })
+  .on('update', (req, res, move, friend) => {
+    friend
+      .update(req.body)
+      .save()
+      .then(() => move(null, { message: 'updated' }))
+      .catch((err) => move(err));
+  });
+  .on('create', (req, res, move) => {
+    var newFriend = new Friend(req.body);
+    newFriend
+      .save((err) => {
+        if (err) return move(err);
+        return move(null, { message: 'created' });
+      });
+  });
+  .on('error', (err, req, res, next) => next(err));
+  .on('done', (req, res, next, result) => res.json(result));
+```

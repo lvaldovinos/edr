@@ -29,7 +29,6 @@ describe('Resource test suite', () => {
     }
     should(events.size).be.exactly(2);
   });
-
   it('Should add a param and match it', () => {
     const newRoute = new edr.Route({
       alias: 'getById',
@@ -41,6 +40,25 @@ describe('Resource test suite', () => {
       .matchRoute({
         method: 'get',
         path: '/friends/1234',
+      })
+      .events;
+    for (const event of events) {
+      should(event.eventName).be.equalOneOf('params', 'friendId', 'getById', 'done');
+    }
+    should(events.size).be.exactly(4);
+  });
+  it('Should add a mount url and match it', () => {
+    const newRoute = new edr.Route({
+      alias: 'getById',
+      path: '/:friendId',
+      method: 'get',
+    });
+    const events = resource
+      .addMountUrl('/api')
+      .addRoute(newRoute)
+      .matchRoute({
+        method: 'get',
+        path: '/api/friends/1234',
       })
       .events;
     for (const event of events) {

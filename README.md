@@ -8,100 +8,105 @@ const http = require('http');
 const express = require('express');
 const app = express();
 const edr = require('edr');
+// create resource hub
+const resourceHub = new edr.ResourceHub({
+  baseUrl: '/api'
+});
+// register Resources within resource hub
+resourceHub
+  .registerResource({
+    baseUrl: '/friends',
+    name: 'friends'
+  })
+  // add routes to resource
+  .addRoute({
+    path: '/',
+    method: 'get',
+    alias: 'getAll'
+  })
+  .addRoute({
+    path: '/',
+    method: 'post',
+    alias: 'create'
+  })
+  .addRoute({
+    path: '/:id'.,
+    method: 'get',
+    alias: 'getById'
+  })
+  .addRoute({
+    path: '/:id'.,
+    method: 'put',
+    alias: 'updateById'
+  })
+  .addRoute({
+    path: '/:id'.,
+    method: 'delete',
+    alias: 'removeById'
+  });
+// send resource hub to edr middleware
+app.use(edr({
+  resourceHub
+}));
 
-app.use(edr());
+// 404 hanlder
+app.use((req, res) => {
+  res
+    .status(404)
+    .json({
+      message: 'Resource not found'
+    });
+});
 
 http
   .createServer(app)
   .listen(3030);
-```
-
-```javascript
-const edr = require('edr');
-// create a new resource
-const comments = new edr.Resource({
-  baseUrl: '/commments'
-});
-// add new resource to edr
-edr
-  .addResource([
-    comments,
-  ]);
-// create new route and add it into a resource
-// add routes to new resource
-const newRoute = new edr.Route({
-  path: '/',
-  method: 'post',
-  alias: 'create',
-});
-comments
-  .addRoute(newRoute)
-  .on('match', (match) => {
+  
+// listen for events
+resourceHub
+  .on('friends', (match) => {
     match
-      .on('create', (req, res) => {
-        setTimeout(() => res.json({ message: 'create' }), 100);
-      });
-  })
-  .on('nomatch', (req, res, next) => next(null));
-```
-
-```javascript
-const edr = require('edr');
-const fs = require('fs');
-// create a new resuorce
-const comments = new edr.Resource({
-  baseUrl: '/commments'
-});
-// add new resource to edr
-edr
-  .addResource([
-    comments,
-  ]);
-// create new route and add it into a resource
-// add routes to new resource
-const createRoute = new edr.Route({
-  path: '/',
-  method: 'post',
-  alias: 'create',
-});
-const getRoute = new edr.Route({
-  path: '/:id',
-  method: 'get',
-  alias: 'getComment',
-});
-comments
-  .addRoute(createRoute)
-  .addRoute(getRoute)
-  .on('match', (match) => {
-    match
-      // move is used by edr
-      .on('create', (req, res, move) => {
-        const newComment = new Comment(req.body);
-        newComment.save((err) => {
-          if (err) return move(err);
-          return move(null, {
-            code: 201,
-            message: 'resource created',
-          });
-        });
-      })
+      // triggered when GET|PUT|DELETE /api/friends/:id 
       .on('id', (req, res, move, id) => {
-        Comment.getById(id, (err, comment) => {
-          if (err) return move(err);
-          return move(null, {
-            code: 200,
-            data: comment,
-          });
-        });
+        Friends.getById(id, move);
       })
-      // next function used by express
+      // triggered when GET /api/friends
+      .on('getAll', (req, res, move) => {
+        Friends.getAll(move);
+      })
+      // triggered when POST /api/friends
+      .on('create', (req, res, move) => {
+        var friend = new Friend(req.body);
+        friend.create(move);
+      })
+      // triggered when GET /api/friends/:id
+      .on('getById', (req, res, move, friend) => {
+        move(null, friend.toJSON());
+      })
+      // triggered when PUT /api/friends/:id
+      .on('updateById', (req, res, move, friend) => {
+        friend
+          .update(req.body)
+          .save(move);
+      })
+      // triggered when DELETE /api/friends/:id
+      .on('removeById', (req, res, move, friend) => {
+        friend
+          .remove(move);
+      })
+      // triggered after previous events are resolved
+      // meaning move function is executed
       .on('done', (req, res, next, result) => {
+        var response = handleFinalResponseSomehow(result);
         res
-          .status(result.code)
-          .json(result);
+          .status(response.code)
+          .json(response);
       })
-      // next function used by express
-      .on('error', (err, req, res, next) => next(err));
-  })
-  // next function used by express
-  .on('nomatch', (req, res, next) => next(null));
+      // if there was an error while executing
+      // events above, meaning move first argument
+      // is not undefined
+      .on('error', (err, req, res, next) {
+        next(handlerErrorSomehow(err));
+      });
+  });
+```

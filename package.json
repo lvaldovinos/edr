@@ -1,6 +1,6 @@
 {
   "name": "edr",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Event-Driven Router for express-like frameworks",
   "main": "index.js",
   "scripts": {
